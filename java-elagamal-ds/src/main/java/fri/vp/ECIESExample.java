@@ -6,6 +6,7 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,11 +14,11 @@ import java.security.*;
 import java.security.spec.X509EncodedKeySpec;
 
 public class ECIESExample {
-    public static KeyPair gen() throws Exception {
-        return KeyPairGenerator.getInstance("X25519").generateKeyPair();
+    public record Ciphertext(byte[] pk, byte[] iv, byte[] ct) {
     }
 
-    public record Ciphertext(byte[] pk, byte[] iv, byte[] ct) {
+    public static KeyPair gen() throws Exception {
+        return KeyPairGenerator.getInstance("X25519").generateKeyPair();
     }
 
     public static Ciphertext encrypt(PublicKey pk, byte[] plaintext) throws Exception {
@@ -64,24 +65,17 @@ public class ECIESExample {
         final String message = "A test message.";
         final byte[] pt = message.getBytes(StandardCharsets.UTF_8);
 
-        System.out.println("Message: " + message);
-        System.out.println("PT: " + Agent.hex(pt));
-
         final KeyPair borKP = gen();
 
-        Files.write(Path.of("../bor.pk"), borKP.getPublic().getEncoded());
-
-//        final byte[] bytes = Files.readAllBytes(Path.of("../data/phonebook.bin"));
-//        Files.write(Path.of("../fernet-java.key"), keyJava);
+        Files.write(Path.of("../ecies.pk"), borKP.getPublic().getEncoded());
+        Files.write(Path.of("../ecies.sk"), borKP.getPrivate().getEncoded());
 
         final Ciphertext ct = encrypt(borKP.getPublic(), pt);
-
-        System.out.println("PK: " + Agent.hex(ct.pk));
-        System.out.println("CT: " + Agent.hex(ct.ct));
-        System.out.println("IV: " + Agent.hex(ct.iv));
+        Files.write(Path.of("../ecies.ct"),
+                ByteBuffer.allocate(ct.pk.length + ct.iv.length + ct.ct.length)
+                        .put(ct.pk).put(ct.iv).put(ct.ct).array());
 
         final byte[] dt = decrypt(borKP.getPrivate(), ct.pk, ct.iv, ct.ct);
         System.out.println(new String(dt, StandardCharsets.UTF_8));
-
     }
 }

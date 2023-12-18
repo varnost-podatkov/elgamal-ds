@@ -1,6 +1,10 @@
 # Byte-compiled / optimized / DLL files
 *.ct
 *.key
+*.pk
+*.sk
+*.sig
+*.msg
 __pycache__/
 *.py[cod]
 # C extensions
