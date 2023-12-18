@@ -69,6 +69,7 @@ public class ECIESExample {
 
         Files.write(Path.of("../ecies.pk"), borKP.getPublic().getEncoded());
         Files.write(Path.of("../ecies.sk"), borKP.getPrivate().getEncoded());
+        Files.write(Path.of("../ecies.msg"), pt);
 
         final Ciphertext ct = encrypt(borKP.getPublic(), pt);
         Files.write(Path.of("../ecies.ct"),
