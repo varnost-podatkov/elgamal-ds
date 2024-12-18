@@ -10,6 +10,7 @@ import java.security.spec.ECGenParameterSpec;
 
 public class ECSignatureExample {
     public static void main(String[] args) throws Exception {
+        // Primer podpisa z ECDSA in krivuljo SECP256R1
         final byte[] document = "An example document".getBytes(StandardCharsets.UTF_8);
         final KeyPairGenerator kpg = KeyPairGenerator.getInstance("EC");
         final ECGenParameterSpec kpgParams = new ECGenParameterSpec("secp256r1");

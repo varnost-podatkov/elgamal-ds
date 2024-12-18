@@ -13,6 +13,7 @@ public class Ed25519Signature {
 
     public static KeyPair gen() throws Exception {
         return KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+//        return null;
     }
 
     public static byte[] sign(PrivateKey key, byte[] message) throws Exception {
@@ -20,13 +21,15 @@ public class Ed25519Signature {
         signer.initSign(key);
         signer.update(message);
         return signer.sign();
+//        return null;
     }
 
     public static boolean verify(PublicKey key, byte[] message, byte[] signature) throws Exception {
-        final Signature verifier = Signature.getInstance("Ed25519");
-        verifier.initVerify(key);
-        verifier.update(message);
-        return verifier.verify(signature);
+        final Signature signer = Signature.getInstance("Ed25519");
+        signer.initVerify(key);
+        signer.update(message);
+        return signer.verify(signature);
+//        return null;
     }
 
     public static void main(String[] args) throws Exception {

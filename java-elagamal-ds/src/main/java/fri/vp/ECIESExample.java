@@ -1,7 +1,5 @@
 package fri.vp;
 
-import fri.isp.Agent;
-
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
 import javax.crypto.spec.IvParameterSpec;
@@ -11,6 +9,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
+import java.security.interfaces.ECPublicKey;
+import java.security.interfaces.XECPublicKey;
+import java.security.spec.AlgorithmParameterSpec;
+import java.security.spec.ECParameterSpec;
 import java.security.spec.X509EncodedKeySpec;
 
 public class ECIESExample {
@@ -19,46 +21,44 @@ public class ECIESExample {
 
     public static KeyPair gen() throws Exception {
         return KeyPairGenerator.getInstance("X25519").generateKeyPair();
+//        return null;
     }
 
     public static Ciphertext encrypt(PublicKey pk, byte[] plaintext) throws Exception {
-        final KeyPair ephemeralKey = gen();
+        final KeyPair tempKey = gen();
 
         final KeyAgreement ka = KeyAgreement.getInstance("XDH");
-        ka.init(ephemeralKey.getPrivate());
+        ka.init(tempKey.getPrivate());
         ka.doPhase(pk, true);
-
         final MessageDigest sha = MessageDigest.getInstance("SHA-256");
-        sha.update(ephemeralKey.getPublic().getEncoded());
+        sha.update(tempKey.getPublic().getEncoded());
         sha.update(ka.generateSecret());
-        final byte[] sharedBytes = sha.digest();
+        final SecretKeySpec key = new SecretKeySpec(sha.digest(), "ChaCha20-Poly1305");
 
-        final SecretKeySpec aesKey = new SecretKeySpec(sharedBytes, "ChaCha20");
+        final Cipher chacha = Cipher.getInstance("ChaCha20-Poly1305");
+        chacha.init(Cipher.ENCRYPT_MODE, key);
 
-        final Cipher gcm = Cipher.getInstance("ChaCha20-Poly1305");
-        gcm.init(Cipher.ENCRYPT_MODE, aesKey);
-        final byte[] ct = gcm.doFinal(plaintext);
-
-        return new Ciphertext(ephemeralKey.getPublic().getEncoded(), gcm.getIV(), ct);
+        return new Ciphertext(tempKey.getPublic().getEncoded(), chacha.getIV(), chacha.doFinal(plaintext));
+//        return null;
     }
 
     public static byte[] decrypt(PrivateKey sk, byte[] pk, byte[] iv, byte[] ct) throws Exception {
-        final PublicKey epk = KeyFactory.getInstance("XDH").generatePublic(new X509EncodedKeySpec(pk));
-
         final KeyAgreement ka = KeyAgreement.getInstance("XDH");
         ka.init(sk);
-        ka.doPhase(epk, true);
+
+        final XECPublicKey senderPK = (XECPublicKey) KeyFactory.getInstance("X25519").generatePublic(new X509EncodedKeySpec(pk));
+        ka.doPhase(senderPK, true);
 
         final MessageDigest sha = MessageDigest.getInstance("SHA-256");
-        sha.update(pk);
+        sha.update(senderPK.getEncoded());
         sha.update(ka.generateSecret());
-        final byte[] sharedBytes = sha.digest();
+        final SecretKeySpec key = new SecretKeySpec(sha.digest(), "ChaCha20-Poly1305");
 
-        final SecretKeySpec aesKey = new SecretKeySpec(sharedBytes, "ChaCha20");
+        final Cipher chacha = Cipher.getInstance("ChaCha20-Poly1305");
+        chacha.init(Cipher.DECRYPT_MODE, key, new IvParameterSpec(iv));
 
-        final Cipher gcm = Cipher.getInstance("ChaCha20-Poly1305");
-        gcm.init(Cipher.DECRYPT_MODE, aesKey, new IvParameterSpec(iv));
-        return gcm.doFinal(ct);
+        return chacha.doFinal(ct);
+//        return null;
     }
 
     public static void main(String[] args) throws Exception {
