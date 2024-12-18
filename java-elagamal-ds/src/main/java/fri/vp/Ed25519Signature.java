@@ -5,22 +5,31 @@ import fri.isp.Agent;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import java.security.*;
+import java.security.spec.MGF1ParameterSpec;
+import java.security.spec.PSSParameterSpec;
 
 public class Ed25519Signature {
 
     public static KeyPair gen() throws Exception {
-        return null;
+        return KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+//        return null;
     }
 
     public static byte[] sign(PrivateKey key, byte[] message) throws Exception {
-        return null;
+        final Signature signer = Signature.getInstance("Ed25519");
+        signer.initSign(key);
+        signer.update(message);
+        return signer.sign();
+//        return null;
     }
 
     public static boolean verify(PublicKey key, byte[] message, byte[] signature) throws Exception {
-        return false;
+        final Signature signer = Signature.getInstance("Ed25519");
+        signer.initVerify(key);
+        signer.update(message);
+        return signer.verify(signature);
+//        return null;
     }
 
     public static void main(String[] args) throws Exception {
